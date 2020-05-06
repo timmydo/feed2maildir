@@ -110,7 +110,7 @@ func main() {
 		fmt.Fprintf(f, "Date: %s\n", timeNowString)
 		fmt.Fprintf(f, "Content-Type: text/plain; charset=UTF-8\n")
 		fmt.Fprintf(f, "Message-Id: <%s@local>\n", mailFilename)
-		fmt.Fprintf(f, "From: (%s) <feed@local>\n", mimeEncode(feed.Title))
+		fmt.Fprintf(f, "From: %s <feed@local>\n", mimeEncode(feed.Title))
 		fmt.Fprintf(f, "Subject: %s\n", mimeEncode(item.Title))
 		fmt.Fprintf(f, "\n%s\n\n%s\n%s", item.Link, item.Description, item.Content)
 

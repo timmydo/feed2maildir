@@ -1,6 +1,6 @@
 VERSION=0.1.0
 
-BINDIR=$HOME/bin
+BINDIR=$(HOME)/bin
 
 GO?=go
 GOFLAGS?=
