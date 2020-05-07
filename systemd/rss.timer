@@ -1,0 +1,9 @@
+[Unit]
+Description=Fetch rss timer
+
+[Timer]
+OnBootSec=1m
+OnUnitInactiveSec=10m
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Fetch rss feeds
+
+[Service]
+Type=oneshot
+ExecStart=/home/timmy/bin/fetchrss.sh
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target
