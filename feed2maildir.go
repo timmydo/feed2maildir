@@ -140,12 +140,12 @@ func main() {
 		fullTmpFilename := path.Join(tmpDir, mailFilename)
 
 		if curDirFiles[sumStr] {
-			fmt.Printf("%s exists in cur dir\n", mailFilename)
+			// fmt.Printf("%s exists in cur dir\n", mailFilename)
 			continue
 		}
 
 		if newDirFiles[sumStr] {
-			fmt.Printf("%s exists in new dir\n", mailFilename)
+			// fmt.Printf("%s exists in new dir\n", mailFilename)
 			continue
 		}
 

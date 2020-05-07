@@ -1,7 +1,7 @@
 #!/bin/sh
 
 fm() {
-feed2maildir --feed $1 --maildir ~/mail/rss
+~/bin/feed2maildir --feed $1 --maildir ~/mail/rss
 }
 
 fm "https://www.phoronix.com/rss.php"
