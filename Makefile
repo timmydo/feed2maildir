@@ -34,6 +34,9 @@ uninstall:
 	$(RM) $(BINDIR)/feed2maildir
 	${RMDIR_IF_EMPTY} $(BINDIR)
 
+test: feed2maildir
+	./feed2maildir --feed https://www.phoronix.com/rss.php --maildir ~/mail/rss
+
 .DEFAULT_GOAL := all
 
-.PHONY: all clean install uninstall
+.PHONY: all clean install uninstall test

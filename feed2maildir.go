@@ -7,6 +7,7 @@ import (
 	"mime"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/cespare/xxhash"
@@ -46,6 +47,27 @@ func mimeEncode(txt string) string {
 	return mime.QEncoding.Encode("utf-8", txt)
 }
 
+func filesInDirToHashSet(dirname string) (map[string]bool, error) {
+	f, err := os.Open(dirname)
+	if err != nil {
+		return nil, err
+	}
+	list, err := f.Readdir(-1)
+	f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	files := map[string]bool{}
+	for _, file := range list {
+		splits := strings.SplitN(file.Name(), ".", 3)
+		if len(splits) == 3 && strings.HasPrefix(splits[2], "feed2maildir") {
+			files[splits[1]] = true
+		}
+	}
+	return files, nil
+}
+
 func main() {
 	flag.Parse()
 	if *flagVersion {
@@ -70,11 +92,32 @@ func main() {
 
 	curDir := path.Join(*flagMaildir, "cur")
 	newDir := path.Join(*flagMaildir, "new")
+	tmpDir := path.Join(*flagMaildir, "tmp")
 	if !dirExists(curDir) {
 		fmt.Println("Maildir/cur directory does not exist: ", *flagMaildir)
+		os.Exit(1)
 	}
 	if !dirExists(newDir) {
 		fmt.Println("Maildir/new directory does not exist: ", *flagMaildir)
+		os.Exit(1)
+	}
+	if !dirExists(newDir) {
+		fmt.Println("Maildir/tmp directory does not exist: ", *flagMaildir)
+		os.Exit(1)
+	}
+
+	// we read all the files in the format we write in the new and cur dirs
+	// if the hash matches of the new mail we'd create, skip writing new mail
+	curDirFiles, err := filesInDirToHashSet(curDir)
+	if err != nil {
+		fmt.Println("Cannot read files from ", curDir)
+		os.Exit(1)
+	}
+
+	newDirFiles, err := filesInDirToHashSet(newDir)
+	if err != nil {
+		fmt.Println("Cannot read files from ", newDir)
+		os.Exit(1)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -90,20 +133,26 @@ func main() {
 		h.Write([]byte(item.Title))
 		h.Write([]byte(item.Link))
 		sum := h.Sum64()
-		mailFilename := fmt.Sprintf("feed2maildir.%d", sum)
-		fullCurFilename := path.Join(curDir, mailFilename)
+		sumStr := fmt.Sprintf("%d", sum)
+		mailFilename := fmt.Sprintf("0.%d.feed2maildir", sum)
+
 		fullNewFilename := path.Join(newDir, mailFilename)
-		if fileExists(fullCurFilename) || fileExists(fullNewFilename) {
-			// email already written
+		fullTmpFilename := path.Join(tmpDir, mailFilename)
+
+		if curDirFiles[sumStr] {
+			fmt.Printf("%s exists in cur dir\n", mailFilename)
 			continue
 		}
 
-		f, err := os.Create(fullNewFilename)
+		if newDirFiles[sumStr] {
+			fmt.Printf("%s exists in new dir\n", mailFilename)
+			continue
+		}
+
+		f, err := os.Create(fullTmpFilename)
 		if err != nil {
 			fmt.Printf("Error writing %s: %s", fullNewFilename, err)
 		}
-
-		defer f.Close()
 
 		fmt.Fprintf(f, "Content-Transfer-Encoding: quoted-printable\n")
 		timeNowString := time.Now().UTC().Format(time.RFC1123Z)
@@ -113,6 +162,12 @@ func main() {
 		fmt.Fprintf(f, "From: %s <feed@local>\n", mimeEncode(feed.Title))
 		fmt.Fprintf(f, "Subject: %s\n", mimeEncode(item.Title))
 		fmt.Fprintf(f, "\n%s\n\n%s\n%s", item.Link, item.Description, item.Content)
+		f.Close()
+		err = os.Rename(fullTmpFilename, fullNewFilename)
+		if err != nil {
+			fmt.Printf("error renaming: %s -> %s\n", fullTmpFilename, fullNewFilename)
+			continue
+		}
 
 		fmt.Printf("%s: %s -> %s\n", feed.Title, item.Title, fullNewFilename)
 	}
