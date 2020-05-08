@@ -124,7 +124,10 @@ func main() {
 	defer cancel()
 	fp := gofeed.NewParser()
 	// "http://feeds.twit.tv/twit.xml"
-	feed, _ := fp.ParseURLWithContext(*flagFeed, ctx)
+	feed, err := fp.ParseURLWithContext(*flagFeed, ctx)
+	if err != nil {
+		fmt.Printf("Error requesting %s: %s", *flagFeed, err.Error())
+	}
 
 	h := xxhash.New()
 
