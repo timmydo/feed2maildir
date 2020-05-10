@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"mime"
@@ -157,14 +158,16 @@ func main() {
 			fmt.Printf("Error writing %s: %s", fullNewFilename, err)
 		}
 
-		fmt.Fprintf(f, "Content-Transfer-Encoding: quoted-printable\n")
+		fmt.Fprintf(f, "Content-Transfer-Encoding: base64\n")
 		timeNowString := time.Now().UTC().Format(time.RFC1123Z)
 		fmt.Fprintf(f, "Date: %s\n", timeNowString)
 		fmt.Fprintf(f, "Content-Type: text/plain; charset=UTF-8\n")
 		fmt.Fprintf(f, "Message-Id: <%s@local>\n", mailFilename)
 		fmt.Fprintf(f, "From: %s <feed@local>\n", mimeEncode(feed.Title))
 		fmt.Fprintf(f, "Subject: %s\n", mimeEncode(item.Title))
-		fmt.Fprintf(f, "\n%s\n\n%s\n%s", item.Link, item.Description, item.Content)
+		fmt.Fprintf(f, "\n")
+		content := fmt.Sprintf("\n%s\n\n%s\n%s", item.Link, item.Description, item.Content)
+		fmt.Fprintf(f, "%s", base64.StdEncoding.EncodeToString([]byte(content)))
 		f.Close()
 		err = os.Rename(fullTmpFilename, fullNewFilename)
 		if err != nil {
